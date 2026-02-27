@@ -8,6 +8,12 @@ export const POLYMARKET = {
   DEFAULT_MARKET_LIMIT: 20,
 } as const;
 
+export const DOME = {
+  API_BASE: "https://api.domeapi.io/v1",
+  CANDLESTICK_INTERVAL_1D: 1440,
+  CANDLESTICK_MAX_DAYS_1D: 365,
+} as const;
+
 export function getEnv(name: string): string {
   const value = process.env[name];
   if (value === undefined || value === "") {
