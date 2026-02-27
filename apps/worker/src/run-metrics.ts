@@ -1,11 +1,4 @@
-/**
- * CLI: compute and print market metrics for a condition_id.
- * Usage: npm run metrics -- <condition_id>
- * Example: npm run metrics -- 0x4567b275e6b667a6217f5cb4f06a797d3a1eaf1d0281fb5bc8c75e2046ae7e57
- *
- * Note: spread and liquidity are from our DB (Gamma-synced markets only); they are null if this market isn't synced.
- */
-
+/** CLI: metrics for condition_id. Usage: npm run metrics -- <condition_id> */
 import dotenv from "dotenv";
 dotenv.config({ quiet: true });
 

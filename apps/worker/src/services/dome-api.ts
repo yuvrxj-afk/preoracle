@@ -1,7 +1,4 @@
-/**
- * Dome API client — uses @dome-api/sdk for markets and candlesticks.
- */
-
+/** Dome API — @dome-api/sdk for markets and candlesticks. */
 import { DomeClient } from "@dome-api/sdk";
 import type { MarketsResponse, CandlesticksResponse } from "@dome-api/sdk";
 
@@ -21,9 +18,7 @@ function getClient(apiKey?: string): DomeClient {
   return clientInstance;
 }
 
-/**
- * Fetches markets filtered by condition_id(s). Returns first page only.
- */
+/** Markets by condition_id (first page). */
 export async function getMarketsByConditionId(
   conditionId: string,
   apiKey?: string
@@ -35,10 +30,7 @@ export async function getMarketsByConditionId(
   });
 }
 
-/**
- * Fetches candlestick data for a market by condition_id.
- * Interval: 1 = 1m (max 1 week), 60 = 1h (max 1 month), 1440 = 1d (max 1 year).
- */
+/** Candlesticks for condition_id. Interval: 1=1m, 60=1h, 1440=1d. */
 export async function getCandlesticks(
   conditionId: string,
   startTime: number,

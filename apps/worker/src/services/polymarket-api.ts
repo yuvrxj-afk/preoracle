@@ -1,7 +1,4 @@
-/**
- * Polymarket Gamma API client — fetch only, no DB.
- */
-
+/** Gamma API client — fetch only, no DB. */
 import axios from "axios";
 import type { PolymarketMarket } from "../types/polymarket";
 import { POLYMARKET } from "../config";
@@ -17,10 +14,7 @@ export interface FetchMarketsOptions {
   endDateAfter?: Date;
 }
 
-/**
- * Fetches active markets from Polymarket Gamma API.
- * Optionally filters to markets ending after a given date and limits count.
- */
+/** Active markets from Gamma API; optional endDateAfter filter. */
 export async function fetchMarkets(
   options: FetchMarketsOptions = {}
 ): Promise<PolymarketMarket[]> {

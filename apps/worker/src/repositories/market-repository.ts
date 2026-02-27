@@ -1,6 +1,4 @@
-/**
- * Market repository — all DB writes for markets, outcomes, state, and snapshots.
- */
+/** Market repository — Gamma markets, outcomes, state, snapshots. */
 
 import type { Pool } from "pg";
 import type { PolymarketMarket } from "../types/polymarket";
@@ -123,9 +121,7 @@ export async function insertPriceSnapshots(
   }
 }
 
-/**
- * Persists a single market (row + outcomes + state + price snapshots).
- */
+/** Persists a single market (row + outcomes + state + price snapshots). */
 export async function persistMarket(pool: Pool, market: PolymarketMarket): Promise<void> {
   const outcomes = parseJsonArray(market.outcomes);
   const prices = parseJsonArray(market.outcomePrices);

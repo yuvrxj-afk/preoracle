@@ -1,5 +1,5 @@
 /**
- * App configuration and constants.
+ * App config and constants.
  */
 
 export const POLYMARKET = {
@@ -9,9 +9,10 @@ export const POLYMARKET = {
 } as const;
 
 export const DOME = {
-  API_BASE: "https://api.domeapi.io/v1",
   CANDLESTICK_INTERVAL_1D: 1440,
   CANDLESTICK_MAX_DAYS_1D: 365,
+  MARKET_CACHE_MAX_AGE_HOURS: 24,
+  CANDLESTICKS_CACHE_MAX_AGE_HOURS: 6,
 } as const;
 
 export function getEnv(name: string): string {

@@ -1,7 +1,4 @@
-/**
- * Sync job: fetch markets from Polymarket API and persist to DB.
- */
-
+/** Sync job: fetch Gamma markets and persist to DB. */
 import type { Pool } from "pg";
 import { fetchMarkets } from "../services/polymarket-api";
 import { persistMarket } from "../repositories/market-repository";
@@ -12,9 +9,7 @@ export interface SyncMarketsOptions {
   endDateAfter?: Date;
 }
 
-/**
- * Fetches active markets from Polymarket and upserts them (and outcomes, state, snapshots) into the DB.
- */
+/** Fetches active markets from Polymarket and upserts them into the DB. */
 export async function syncMarkets(
   pool: Pool,
   options: SyncMarketsOptions = {}
