@@ -19,12 +19,12 @@ export async function syncMarkets(
   pool: Pool,
   options: SyncMarketsOptions = {}
 ): Promise<{ synced: number }> {
-  const { limit = POLYMARKET.DEFAULT_MARKET_LIMIT, endDateAfter = new Date() } = options;
+  const { limit = POLYMARKET.DEFAULT_MARKET_LIMIT, endDateAfter } = options;
 
   const markets = await fetchMarkets({
     active: true,
     limit,
-    endDateAfter,
+    ...(endDateAfter !== undefined && { endDateAfter }),
   });
 
   for (const market of markets) {

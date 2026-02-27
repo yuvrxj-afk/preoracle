@@ -14,10 +14,7 @@ async function main() {
   }
 
   try {
-    const { synced } = await syncMarkets(pool, {
-      limit: 20,
-      endDateAfter: new Date(),
-    });
+    const { synced } = await syncMarkets(pool, { limit: 20 });
     console.log("✅ Markets synced successfully:", synced);
   } catch (err) {
     console.error("❌ Sync failed", err);
