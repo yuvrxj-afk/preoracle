@@ -21,8 +21,8 @@ export interface GammaMarketRow {
 
 export interface MarketContext {
   condition_id: string;
-  /** From dome_markets cache (title, end_time). */
-  dome_market: { title: string | null; end_time: number | null } | null;
+  /** From dome_markets cache (title, end_time, resolution_source). */
+  dome_market: { title: string | null; end_time: number | null; resolution_source: string | null; volume_total: number | null } | null;
   /** Last 30d daily bars (outcome 0). From cache. */
   candlesticks_30d: CandlestickRow[];
   /** Computed metrics (DB-first, Dome fallback). */
@@ -55,7 +55,7 @@ export async function getMarketContext(
   return {
     condition_id: conditionId,
     dome_market: domeRow
-      ? { title: domeRow.title, end_time: domeRow.end_time }
+      ? { title: domeRow.title, end_time: domeRow.end_time, resolution_source: domeRow.resolution_source, volume_total: domeRow.volume_total }
       : null,
     candlesticks_30d: candlesticks,
     metrics,

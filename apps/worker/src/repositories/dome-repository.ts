@@ -12,6 +12,8 @@ export interface DomeMarketRow {
   end_time: number | null;
   fetched_at: Date;
   title: string | null;
+  resolution_source: string | null;
+  volume_total: number | null;
 }
 
 const UPSERT_DOME_MARKET = `
@@ -84,8 +86,10 @@ export async function getDomeMarket(
     end_time: string | null;
     fetched_at: Date;
     title: string | null;
+    resolution_source: string | null;
+    volume_total: string | null;
   }>(
-    `SELECT condition_id, end_time, fetched_at, title FROM dome_markets WHERE condition_id = $1 LIMIT 1`,
+    `SELECT condition_id, end_time, fetched_at, title, resolution_source, volume_total FROM dome_markets WHERE condition_id = $1 LIMIT 1`,
     [conditionId]
   );
   const row = res.rows[0];
@@ -95,6 +99,8 @@ export async function getDomeMarket(
     end_time: row.end_time != null ? Number(row.end_time) : null,
     fetched_at: row.fetched_at,
     title: row.title,
+    resolution_source: row.resolution_source,
+    volume_total: row.volume_total != null ? Number(row.volume_total) : null,
   };
 }
 
