@@ -168,21 +168,57 @@ export async function upsertCandlesticks(
   const [rows] = first;
   if (!rows || rows.length === 0) return;
 
+  // Validate and collect rows — skip any bar with missing/invalid close price.
+  const valid: Array<{
+    ts: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    vol: number;
+  }> = [];
   for (const r of rows) {
-    const close = r.price?.close ?? 0;
-    const open = r.price?.open ?? close;
-    const high = r.price?.high ?? close;
-    const low = r.price?.low ?? close;
-    const vol = typeof r.volume === "number" ? r.volume : 0;
-    await pool.query(
-      `
-      INSERT INTO candlesticks (condition_id, end_period_ts, interval_minutes, outcome_index, open_p, high_p, low_p, close_p, volume)
-      VALUES ($1, $2, $3, 0, $4, $5, $6, $7, $8)
-      ON CONFLICT (condition_id, end_period_ts, interval_minutes, outcome_index) DO UPDATE SET
-        open_p = EXCLUDED.open_p, high_p = EXCLUDED.high_p, low_p = EXCLUDED.low_p,
-        close_p = EXCLUDED.close_p, volume = EXCLUDED.volume
-      `,
-      [conditionId, r.end_period_ts, intervalMinutes, open, high, low, close, vol]
-    );
+    const close = r.price?.close;
+    if (typeof close !== "number" || !Number.isFinite(close)) {
+      console.warn(`[dome] skipping candlestick ts=${r.end_period_ts}: missing or invalid close price`);
+      continue;
+    }
+    valid.push({
+      ts: r.end_period_ts,
+      open: r.price?.open ?? close,
+      high: r.price?.high ?? close,
+      low: r.price?.low ?? close,
+      close,
+      vol: typeof r.volume === "number" && Number.isFinite(r.volume) ? r.volume : 0,
+    });
   }
+  if (valid.length === 0) return;
+
+  // Batch insert: one query instead of N sequential queries.
+  const placeholders = valid
+    .map((_, i) => {
+      const b = i * 8;
+      return `($${b + 1},$${b + 2},$${b + 3},0,$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8})`;
+    })
+    .join(",");
+  const params: unknown[] = valid.flatMap((r) => [
+    conditionId,
+    r.ts,
+    intervalMinutes,
+    r.open,
+    r.high,
+    r.low,
+    r.close,
+    r.vol,
+  ]);
+  await pool.query(
+    `
+    INSERT INTO candlesticks (condition_id, end_period_ts, interval_minutes, outcome_index, open_p, high_p, low_p, close_p, volume)
+    VALUES ${placeholders}
+    ON CONFLICT (condition_id, end_period_ts, interval_minutes, outcome_index) DO UPDATE SET
+      open_p = EXCLUDED.open_p, high_p = EXCLUDED.high_p, low_p = EXCLUDED.low_p,
+      close_p = EXCLUDED.close_p, volume = EXCLUDED.volume
+    `,
+    params
+  );
 }

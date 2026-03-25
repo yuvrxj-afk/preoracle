@@ -1,7 +1,9 @@
-/** Unified L1 context for a condition_id (Dome + Gamma + metrics). */
+/** Unified L1 context for a condition_id (Dome + Gamma + metrics + flow + verdict). */
 import type { Pool } from "pg";
 import { getDomeMarket, getCandlesticksFromDb, type CandlestickRow } from "../repositories/dome-repository";
 import { computeMarketMetrics, type MarketMetrics } from "../metrics/compute-market-metrics";
+import { getFlowMetrics, type FlowMetrics } from "../repositories/trade-repository";
+import { getLatestVerdict, type StoredVerdict } from "../reasoning/reason-market";
 import { DOME } from "../config";
 
 const SECONDS_PER_DAY = 86400;
@@ -27,6 +29,10 @@ export interface MarketContext {
   metrics: MarketMetrics;
   /** From Gamma-synced markets + market_state, if present. */
   gamma_market: GammaMarketRow | null;
+  /** Whale/flow signals from CLOB trades (last 24h). Null if no trade data. */
+  flow: FlowMetrics | null;
+  /** Latest AI verdict for this market, if one has been generated. */
+  verdict: StoredVerdict | null;
 }
 
 /** Returns full L1 context; uses cache when fresh, fetches from Dome when stale. */
@@ -37,11 +43,13 @@ export async function getMarketContext(
   const now = Math.floor(Date.now() / 1000);
   const start30d = now - 31 * SECONDS_PER_DAY;
 
-  const [domeRow, candlesticks, metrics, gammaRow] = await Promise.all([
+  const [domeRow, candlesticks, metrics, gammaRow, flow, verdict] = await Promise.all([
     getDomeMarket(pool, conditionId),
     getCandlesticksFromDb(pool, conditionId, DOME.CANDLESTICK_INTERVAL_1D, start30d, now),
     computeMarketMetrics(conditionId, pool),
     getGammaMarketByConditionId(pool, conditionId),
+    getFlowMetrics(pool, conditionId).catch(() => null),
+    getLatestVerdict(conditionId, pool).catch(() => null),
   ]);
 
   return {
@@ -52,6 +60,8 @@ export async function getMarketContext(
     candlesticks_30d: candlesticks,
     metrics,
     gamma_market: gammaRow,
+    flow,
+    verdict,
   };
 }
 
