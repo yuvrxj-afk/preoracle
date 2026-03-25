@@ -1,0 +1,15 @@
+{
+  "name": "preoracle",
+  "private": true,
+  "packageManager": "bun@1.3.5",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.8.20"
+  }
+}

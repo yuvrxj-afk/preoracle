@@ -1,26 +1,87 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-manrope);
+
+  /* Map shadcn CSS vars to Tailwind v4 color utilities */
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  /* Preoracle design tokens */
+  --color-surface: #0e0e10;
+  --color-surface-dim: #0e0e10;
+  --color-surface-bright: #2c2c2f;
+  --color-surface-container-lowest: #090909;
+  --color-surface-container-low: #131315;
+  --color-surface-container: #19191c;
+  --color-surface-container-high: #1f1f22;
+  --color-surface-container-highest: #262528;
+  --color-surface-variant: #262528;
+
+  --color-primary: #ba9eff;
+  --color-primary-dim: #8455ef;
+  --color-primary-container: #ae8dff;
+  --color-primary-fixed: #ae8dff;
+  --color-on-primary: #39008c;
+  --color-on-primary-fixed: #000000;
+
+  --color-secondary: #45fa9c;
+  --color-secondary-container: #006d3e;
+  --color-on-secondary: #005b32;
+  --color-on-secondary-container: #e2ffe7;
+
+  --color-tertiary: #ff716a;
+  --color-tertiary-fixed: #ff928b;
+
+  --color-error: #ff6e84;
+
+  --color-on-surface: #f9f5f8;
+  --color-on-surface-variant: #adaaad;
+  --color-on-background: #f9f5f8;
+  --color-outline: #767577;
+  --color-outline-variant: #48474a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: #0e0e10;
+  --foreground: #f9f5f8;
+  --card: #131315;
+  --card-foreground: #f9f5f8;
+  --primary: #ba9eff;
+  --primary-foreground: #39008c;
+  --secondary: #45fa9c;
+  --secondary-foreground: #005b32;
+  --muted: #19191c;
+  --muted-foreground: #adaaad;
+  --accent: #1f1f22;
+  --accent-foreground: #f9f5f8;
+  --destructive: #ff6e84;
+  --border: #48474a;
+  --input: #1f1f22;
+  --ring: #ba9eff;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), sans-serif;
+  }
+  .font-manrope {
+    font-family: var(--font-manrope), sans-serif;
+  }
+  .font-mono {
+    font-family: var(--font-mono), monospace;
+  }
 }
