@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const WORKER_API_URL = process.env.WORKER_API_URL ?? "http://localhost:4000";
+const WORKER_API_URL = process.env.WORKER_URL ?? process.env.WORKER_API_URL ?? "http://localhost:4000";
 
 type RouteParams = {
   params: Promise<{ conditionId: string }>;

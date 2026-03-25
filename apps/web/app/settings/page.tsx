@@ -1,14 +1,67 @@
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface UserSettings {
+  autopilot: boolean;
+  max_bet_usd: number;
+  min_confidence: number;
+  categories: string[];
+  telegram_chat_id: string | null;
+}
+
+const ALL_CATEGORIES = ["Crypto", "Politics", "Equities", "Macro", "Commodities"];
 
 export default function SettingsPage() {
-  const [autopilot, setAutopilot] = useState(true);
-  const [maxBet, setMaxBet] = useState("250");
-  const [minConf, setMinConf] = useState("70");
-  const [telegram, setTelegram] = useState(false);
-  const [categories, setCategories] = useState({ Crypto: true, Politics: true, Equities: false, Macro: false, Commodities: false });
+  const [settings, setSettings] = useState<UserSettings>({
+    autopilot: false,
+    max_bet_usd: 100,
+    min_confidence: 0.7,
+    categories: ["Crypto", "Politics"],
+    telegram_chat_id: null,
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.min_confidence != null) setSettings({
+          autopilot: data.autopilot,
+          max_bet_usd: Number(data.max_bet_usd),
+          min_confidence: Number(data.min_confidence),
+          categories: Array.isArray(data.categories) ? data.categories : JSON.parse(data.categories ?? "[]"),
+          telegram_chat_id: data.telegram_chat_id,
+        });
+      })
+      .catch(console.error);
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleCategory = (cat: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(cat)
+        ? prev.categories.filter((c) => c !== cat)
+        : [...prev.categories, cat],
+    }));
+  };
 
   return (
     <AppLayout>
@@ -20,11 +73,9 @@ export default function SettingsPage() {
               <h3 className="font-bold font-manrope text-[#f9f5f8]">Autopilot Mode</h3>
               <p className="text-xs text-zinc-400 mt-1">Allow Preoracle to automatically place trades that match your risk profile</p>
             </div>
-            <button
-              onClick={() => setAutopilot(!autopilot)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${autopilot ? "bg-[#ba9eff]/30 border border-[#ba9eff]/50" : "bg-zinc-800 border border-zinc-700"}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${autopilot ? "left-7 bg-[#ba9eff] shadow-[0_0_12px_#ba9eff]" : "left-1 bg-zinc-600"}`} />
+            <button onClick={() => setSettings((p) => ({ ...p, autopilot: !p.autopilot }))}
+              className={`relative w-12 h-6 rounded-full transition-colors ${settings.autopilot ? "bg-[#ba9eff]/30 border border-[#ba9eff]/50" : "bg-zinc-800 border border-zinc-700"}`}>
+              <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${settings.autopilot ? "left-7 bg-[#ba9eff] shadow-[0_0_12px_#ba9eff]" : "left-1 bg-zinc-600"}`} />
             </button>
           </div>
         </div>
@@ -39,27 +90,20 @@ export default function SettingsPage() {
             </label>
             <div className="flex items-center gap-3">
               <span className="text-zinc-500 font-mono">$</span>
-              <input
-                type="number"
-                value={maxBet}
-                onChange={(e) => setMaxBet(e.target.value)}
-                className="flex-1 bg-[#1f1f22] border border-zinc-800 rounded-lg px-4 py-2.5 font-mono text-[#f9f5f8] text-sm focus:outline-none focus:border-[#ba9eff]/50"
-              />
+              <input type="number" value={settings.max_bet_usd}
+                onChange={(e) => setSettings((p) => ({ ...p, max_bet_usd: Number(e.target.value) }))}
+                className="flex-1 bg-[#1f1f22] border border-zinc-800 rounded-lg px-4 py-2.5 font-mono text-[#f9f5f8] text-sm focus:outline-none focus:border-[#ba9eff]/50" />
             </div>
           </div>
 
           <div>
             <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-2">
-              Minimum Confidence Threshold — {minConf}%
+              Minimum Confidence — {(settings.min_confidence * 100).toFixed(0)}%
             </label>
-            <input
-              type="range"
-              min={50}
-              max={95}
-              value={minConf}
-              onChange={(e) => setMinConf(e.target.value)}
-              className="w-full accent-[#ba9eff]"
-            />
+            <input type="range" min={50} max={95} step={1}
+              value={Math.round(settings.min_confidence * 100)}
+              onChange={(e) => setSettings((p) => ({ ...p, min_confidence: Number(e.target.value) / 100 }))}
+              className="w-full accent-[#ba9eff]" />
             <div className="flex justify-between text-[10px] font-mono text-zinc-600 mt-1">
               <span>50% (Aggressive)</span>
               <span>95% (Conservative)</span>
@@ -71,66 +115,36 @@ export default function SettingsPage() {
         <div className="bg-[#131315] p-6 rounded-xl">
           <h3 className="font-bold font-manrope text-[#f9f5f8] mb-4">Market Categories</h3>
           <div className="space-y-3">
-            {Object.entries(categories).map(([cat, enabled]) => (
+            {ALL_CATEGORIES.map((cat) => (
               <div key={cat} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
                 <span className="text-sm font-manrope text-zinc-300">{cat}</span>
-                <button
-                  onClick={() => setCategories((prev) => ({ ...prev, [cat]: !prev[cat as keyof typeof prev] }))}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${enabled ? "bg-[#ba9eff]/30 border border-[#ba9eff]/50" : "bg-zinc-800 border border-zinc-700"}`}
-                >
-                  <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${enabled ? "left-5 bg-[#ba9eff]" : "left-0.5 bg-zinc-600"}`} />
+                <button onClick={() => toggleCategory(cat)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${settings.categories.includes(cat) ? "bg-[#ba9eff]/30 border border-[#ba9eff]/50" : "bg-zinc-800 border border-zinc-700"}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${settings.categories.includes(cat) ? "left-5 bg-[#ba9eff]" : "left-0.5 bg-zinc-600"}`} />
                 </button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Notifications */}
+        {/* Telegram */}
         <div className="bg-[#131315] p-6 rounded-xl">
           <h3 className="font-bold font-manrope text-[#f9f5f8] mb-4">Notifications</h3>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-manrope text-zinc-300">Telegram Alerts</p>
-              <p className="text-xs text-zinc-500 mt-0.5">Get notified when autopilot places a trade</p>
-            </div>
-            <button
-              onClick={() => setTelegram(!telegram)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${telegram ? "bg-[#ba9eff]/30 border border-[#ba9eff]/50" : "bg-zinc-800 border border-zinc-700"}`}
-            >
-              <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${telegram ? "left-5 bg-[#ba9eff]" : "left-0.5 bg-zinc-600"}`} />
-            </button>
+          <div>
+            <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-2">
+              Telegram Chat ID (optional)
+            </label>
+            <input type="text" placeholder="@username or chat ID"
+              value={settings.telegram_chat_id ?? ""}
+              onChange={(e) => setSettings((p) => ({ ...p, telegram_chat_id: e.target.value || null }))}
+              className="w-full bg-[#1f1f22] border border-zinc-800 rounded-lg px-4 py-2.5 font-mono text-sm text-[#f9f5f8] placeholder-zinc-600 focus:outline-none focus:border-[#ba9eff]/50" />
+            <p className="text-[10px] font-mono text-zinc-600 mt-2">Get notified when autopilot places a trade</p>
           </div>
-          {telegram && (
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Telegram chat ID or @username"
-                className="w-full bg-[#1f1f22] border border-zinc-800 rounded-lg px-4 py-2.5 font-mono text-sm text-[#f9f5f8] placeholder-zinc-600 focus:outline-none focus:border-[#ba9eff]/50"
-              />
-            </div>
-          )}
         </div>
 
-        {/* Wallet */}
-        <div className="bg-[#131315] p-6 rounded-xl">
-          <h3 className="font-bold font-manrope text-[#f9f5f8] mb-4">Embedded Wallet</h3>
-          <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg">
-            <div>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Wallet Address</p>
-              <p className="font-mono text-sm text-zinc-300 mt-1">0x1a2b...3c4d</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Balance</p>
-              <p className="font-mono text-sm text-[#f9f5f8] mt-1">$12,450.50</p>
-            </div>
-          </div>
-          <button className="w-full mt-4 py-3 border border-zinc-700 hover:bg-zinc-800 transition-colors rounded text-xs font-bold font-manrope uppercase tracking-widest text-zinc-400">
-            Fund Wallet
-          </button>
-        </div>
-
-        <button className="w-full py-3 bg-[#ba9eff] text-[#39008c] rounded font-manrope font-bold text-sm uppercase tracking-tight hover:bg-[#8455ef] hover:text-white transition-colors">
-          Save Settings
+        <button onClick={save} disabled={saving}
+          className={`w-full py-3 rounded font-manrope font-bold text-sm uppercase tracking-tight transition-colors ${saving ? "bg-zinc-700 text-zinc-400" : saved ? "bg-[#45fa9c] text-[#005b32]" : "bg-[#ba9eff] text-[#39008c] hover:bg-[#8455ef] hover:text-white"}`}>
+          {saving ? "Saving..." : saved ? "Saved ✓" : "Save Settings"}
         </button>
       </div>
     </AppLayout>
