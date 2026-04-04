@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sidebar, BottomNav } from "./sidebar";
+import { LogoIcon } from "./logo";
 
 const ROUTE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -28,7 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Top bar */}
         <header className="flex justify-between items-center w-full px-6 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 sticky top-0 z-40">
           <div className="flex items-center gap-8">
-            <span className="text-2xl font-black tracking-tighter text-[#ba9eff] md:hidden">PO</span>
+            <LogoIcon size={40} className="md:hidden" />
             <div className="hidden md:flex gap-6 items-center">
               {Object.entries(ROUTE_LABELS).map(([href, name]) => (
                 <Link

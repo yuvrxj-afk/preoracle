@@ -12,6 +12,8 @@ import {
   createPosition,
   closePosition,
 } from "./repositories/position-repository";
+import { startScheduler, lastRun } from "./scheduler";
+import { placeOrder, getUsdcBalance } from "./services/clob-service";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -35,7 +37,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, scheduler: { lastRun } });
 });
 
 // ---------------------------------------------------------------------------
@@ -260,6 +262,62 @@ app.put("/settings", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Trade execution (Phase 4 — requires POLYMARKET_PK in .env)
+// ---------------------------------------------------------------------------
+app.post("/trade", async (req, res) => {
+  const { condition_id, side, size_usd, price } = req.body;
+  if (!condition_id || !side || !size_usd) {
+    res.status(400).json({ error: "Missing required fields: condition_id, side, size_usd" });
+    return;
+  }
+  if (!["YES", "NO"].includes(side)) {
+    res.status(400).json({ error: "side must be 'YES' or 'NO'" });
+    return;
+  }
+  try {
+    // Look up token_id from dome_markets
+    const mktRes = await pool.query<{ side_a_id: string | null; side_b_id: string | null }>(
+      `SELECT side_a_id, side_b_id FROM dome_markets WHERE condition_id = $1 LIMIT 1`,
+      [condition_id]
+    );
+    const mkt = mktRes.rows[0];
+    if (!mkt) { res.status(404).json({ error: "Market not found in dome_markets" }); return; }
+
+    const tokenID = side === "YES" ? mkt.side_a_id : mkt.side_b_id;
+    if (!tokenID) { res.status(400).json({ error: `No token_id for side ${side}` }); return; }
+
+    // Default price: fetch current mid from CLOB if not provided
+    const tradePrice = price ?? 0.5;
+
+    const result = await placeOrder({ tokenID, conditionId: condition_id, price: tradePrice, sizeUsd: size_usd, side: "BUY" });
+
+    // Record in positions table
+    const pos = await createPosition(pool, {
+      condition_id,
+      side,
+      entry_price: result.price,
+      size_usd,
+    });
+
+    res.status(201).json({ order: result, position: pos });
+  } catch (err) {
+    console.error("POST /trade", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Trade failed" });
+  }
+});
+
+app.get("/wallet/balance", async (_req, res) => {
+  try {
+    const balance = await getUsdcBalance();
+    res.json(balance);
+  } catch (err) {
+    console.error("GET /wallet/balance", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Balance check failed" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Worker API listening on http://localhost:${PORT}`);
+  startScheduler(pool);
 });

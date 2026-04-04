@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoFull } from "./logo";
 
 const NAV = [
   { href: "/dashboard", icon: "dashboard", label: "Dashboard" },
@@ -18,7 +19,7 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col py-8 gap-4 bg-zinc-950 h-screen w-64 fixed left-0 top-0 border-r border-zinc-900 z-50">
       <div className="px-6 mb-8">
         <Link href="/">
-          <h1 className="text-xl font-black text-[#ba9eff] font-manrope tracking-tighter">Preoracle</h1>
+          <LogoFull size={40} />
         </Link>
         <div className="mt-4 p-3 bg-zinc-900 rounded-lg">
           <p className="text-[10px] font-manrope font-semibold text-zinc-500 uppercase tracking-widest mb-1">Portfolio Balance</p>

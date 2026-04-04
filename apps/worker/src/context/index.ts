@@ -1,1 +1,1 @@
-export { getMarketContext, type MarketContext, type GammaMarketRow } from "./get-market-context";
+export { getMarketContext, type MarketContext } from "./get-market-context";

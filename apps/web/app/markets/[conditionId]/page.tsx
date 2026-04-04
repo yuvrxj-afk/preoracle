@@ -4,6 +4,10 @@ import { AppLayout } from "@/components/app-layout";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar,
+} from "recharts";
 
 interface MarketContext {
   condition_id: string;
@@ -18,7 +22,7 @@ interface MarketContext {
     liquidity: number | null;
     time_to_expiry: number | null;
   };
-  gamma_market: { question: string; description: string | null } | null;
+  gamma_market?: { question: string; description: string | null } | null;
   flow: { net_flow_24h: number; whale_count_24h: number; largest_trade_24h: number; volume_24h: number } | null;
   verdict: { verdict: string; confidence: number; reason: string; created_at: string } | null;
 }
@@ -103,9 +107,14 @@ export default function MarketDetailPage() {
   const description = data.gamma_market?.description ?? null;
   const endTime = data.dome_market?.end_time;
   const resolutionSource = data.dome_market?.resolution_source;
-  const bars = data.candlesticks_30d.map((c) => c.close_p);
-  const maxBar = bars.length > 0 ? Math.max(...bars) : 1;
-  const currentPrice = bars[bars.length - 1] ?? null;
+  const chartData = data.candlesticks_30d.map((c) => ({
+    date: new Date(c.end_period_ts * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    price: parseFloat((c.close_p * 100).toFixed(1)),
+    volume: parseFloat(c.volume.toFixed(0)),
+  }));
+  const currentPrice = data.candlesticks_30d.length > 0
+    ? data.candlesticks_30d[data.candlesticks_30d.length - 1]!.close_p
+    : null;
   const change7d = data.metrics["7d_change"];
   const change30d = data.metrics["30d_change"];
   const positive7d = change7d != null ? change7d >= 0 : true;
@@ -149,27 +158,50 @@ export default function MarketDetailPage() {
         </div>
 
         {/* Price chart */}
-        {bars.length > 0 && (
+        {chartData.length > 0 && (
           <div className="bg-[#131315] p-6 rounded-xl">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-bold font-manrope text-zinc-300">Price History (30d)</h3>
               <span className={`text-sm font-mono ${change30d != null && change30d >= 0 ? "text-[#45fa9c]" : "text-[#ff716a]"}`}>
                 {change30d != null ? `${change30d >= 0 ? "+" : ""}${fmt(change30d)}%` : "—"} 30d
               </span>
             </div>
-            <div className="h-32 flex items-end gap-1">
-              {bars.map((h, i) => {
-                const pct = (h / maxBar) * 100;
-                const isRecent = i >= bars.length - 5;
-                return (
-                  <div key={i} className={`flex-1 rounded-sm ${isRecent ? "bg-[#ba9eff]" : "bg-zinc-800"}`}
-                    style={{ height: `${pct}%`, opacity: isRecent ? 0.5 + (i - (bars.length - 5)) * 0.1 : 0.4 }} />
-                );
-              })}
-            </div>
-            <div className="flex justify-between mt-2">
-              <span className="text-[10px] font-mono text-zinc-600">30d ago</span>
-              <span className="text-[10px] font-mono text-zinc-600">Today</span>
+
+            {/* Price area chart */}
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ba9eff" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#ba9eff" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: "#52525b", fontSize: 10, fontFamily: "monospace" }}
+                  tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: "#52525b", fontSize: 10, fontFamily: "monospace" }}
+                  tickLine={false} axisLine={false} tickFormatter={(v) => `${v}¢`}
+                  domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{ background: "#19191c", border: "1px solid #3f3f46", borderRadius: 8, fontFamily: "monospace", fontSize: 12 }}
+                  labelStyle={{ color: "#a1a1aa" }}
+                  formatter={(v) => [`${v}¢`, "Price"]}
+                />
+                <Area type="monotone" dataKey="price" stroke="#ba9eff" strokeWidth={2}
+                  fill="url(#priceGradient)" dot={false} activeDot={{ r: 4, fill: "#ba9eff" }} />
+              </AreaChart>
+            </ResponsiveContainer>
+
+            {/* Volume bar chart */}
+            <div className="mt-4">
+              <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-2">Volume</p>
+              <ResponsiveContainer width="100%" height={48}>
+                <BarChart data={chartData} margin={{ top: 0, right: 4, left: -20, bottom: 0 }}>
+                  <Bar dataKey="volume" fill="#ba9eff" opacity={0.3} radius={[2, 2, 0, 0]} />
+                  <XAxis hide />
+                  <YAxis hide />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}

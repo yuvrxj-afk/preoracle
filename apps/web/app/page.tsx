@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LogoFull } from "@/components/logo";
 
 export default function LandingPage() {
   return (
@@ -10,7 +11,7 @@ export default function LandingPage() {
       <div className="min-h-screen bg-[#0e0e10] text-[#f9f5f8] flex flex-col">
         {/* Nav */}
         <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 h-16 bg-[#0e0e10]/80 backdrop-blur-xl border-b border-zinc-800/50">
-          <h1 className="text-xl font-black text-[#ba9eff] font-manrope tracking-tighter">Preoracle</h1>
+          <LogoFull size={40} />
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="text-zinc-400 hover:text-zinc-100 text-sm font-manrope font-semibold transition-colors">Dashboard</Link>
             <Link href="/markets" className="text-zinc-400 hover:text-zinc-100 text-sm font-manrope font-semibold transition-colors">Markets</Link>
@@ -134,7 +135,7 @@ export default function LandingPage() {
         {/* Footer */}
         <footer className="py-10 px-8 border-t border-zinc-900">
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-manrope font-black text-[#ba9eff] tracking-tighter">Preoracle</p>
+            <LogoFull size={22} />
             <p className="text-xs font-mono text-zinc-600">Built on Polymarket · Powered by Claude · Not financial advice</p>
             <div className="flex gap-6">
               {["Privacy", "Terms", "Docs"].map((l) => (

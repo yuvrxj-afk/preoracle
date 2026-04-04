@@ -141,31 +141,9 @@ function computeFromSeries(series: SeriesPoint[]): {
   };
 }
 
-async function getSpreadAndLiquidity(
-  pool: Pool,
-  conditionId: string
-): Promise<{ spread: number | null; liquidity: number | null; state_updated_at: Date | null }> {
-  const res = await pool.query<{
-    spread: string | null;
-    liquidity: string | null;
-    updated_at: Date | null;
-  }>(
-    `
-    SELECT s.spread, s.liquidity, s.updated_at
-    FROM market_state s
-    JOIN markets m ON m.id = s.market_id
-    WHERE m.condition_id = $1
-    LIMIT 1
-    `,
-    [conditionId]
-  );
-  const row = res.rows[0];
-  if (!row) return { spread: null, liquidity: null, state_updated_at: null };
-  return {
-    spread: row.spread != null ? Number(row.spread) : null,
-    liquidity: row.liquidity != null ? Number(row.liquidity) : null,
-    state_updated_at: row.updated_at ?? null,
-  };
+// Spread and liquidity will come from CLOB API (Phase 4) — returning null until then.
+function getSpreadAndLiquidity(): { spread: null; liquidity: null; state_updated_at: null } {
+  return { spread: null, liquidity: null, state_updated_at: null };
 }
 
 /** Uses cached Dome data when fresh; otherwise fetches from Dome and caches. Spread/liquidity from DB. */
@@ -218,7 +196,7 @@ export async function computeMarketMetrics(
     }
   }
 
-  const { spread, liquidity, state_updated_at } = await getSpreadAndLiquidity(pool, conditionId);
+  const { spread, liquidity, state_updated_at } = getSpreadAndLiquidity();
   const computed = computeFromSeries(series);
 
   return {

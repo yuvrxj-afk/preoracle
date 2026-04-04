@@ -23,7 +23,7 @@ export async function syncDome(
 
   if (conditionIds == null || conditionIds.length === 0) {
     const res = await pool.query<{ condition_id: string }>(
-      `SELECT DISTINCT condition_id FROM markets WHERE condition_id IS NOT NULL`
+      `SELECT condition_id FROM tracked_markets ORDER BY added_at DESC`
     );
     conditionIds = res.rows.map((r) => r.condition_id);
   }

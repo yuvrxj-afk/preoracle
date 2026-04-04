@@ -45,13 +45,22 @@ function timeAgo(iso: string): string {
 export default function DashboardPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [allPositions, setAllPositions] = useState<Position[]>([]);
 
   useEffect(() => {
     fetch("/api/signals?limit=3").then((r) => r.json()).then(setSignals).catch(() => {});
-    fetch("/api/positions").then((r) => r.json()).then((data: Position[]) => setPositions(data.filter((p) => p.status === "open").slice(0, 3))).catch(() => {});
+    fetch("/api/positions").then((r) => r.json()).then((data: Position[]) => {
+      setAllPositions(data);
+      setPositions(data.filter((p) => p.status === "open").slice(0, 3));
+    }).catch(() => {});
   }, []);
 
-  const totalPnl = positions.reduce((s, p) => s + (p.pnl_usd ?? 0), 0);
+  const openPositions = allPositions.filter((p) => p.status === "open");
+  const closedPositions = allPositions.filter((p) => p.status === "closed");
+  const totalInvested = openPositions.reduce((s, p) => s + p.size_usd, 0);
+  const totalPnl = allPositions.reduce((s, p) => s + (p.pnl_usd ?? 0), 0);
+  const wins = closedPositions.filter((p) => (p.pnl_usd ?? 0) > 0).length;
+  const winRate = closedPositions.length > 0 ? Math.round((wins / closedPositions.length) * 100) : null;
 
   return (
     <AppLayout>
@@ -60,25 +69,46 @@ export default function DashboardPage() {
         <section className="col-span-12 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2 bg-[#131315] p-6 rounded-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#ba9eff]/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-[#ba9eff]/10 transition-all" />
-            <label className="text-xs font-manrope font-semibold text-zinc-500 uppercase tracking-widest">Total Portfolio Value</label>
+            <label className="text-xs font-manrope font-semibold text-zinc-500 uppercase tracking-widest">Deployed Capital</label>
             <div className="flex items-end gap-3 mt-2">
-              <h2 className="text-4xl font-mono font-medium text-[#f9f5f8]">$12,450.50</h2>
-              <span className="text-[#45fa9c] font-mono text-sm mb-1.5 flex items-center">
-                <span className="material-symbols-outlined text-sm mr-1">trending_up</span>+12.4%
-              </span>
+              <h2 className="text-4xl font-mono font-medium text-[#f9f5f8]">
+                ${totalInvested.toFixed(2)}
+              </h2>
+              {totalPnl !== 0 && (
+                <span className={`font-mono text-sm mb-1.5 flex items-center ${totalPnl >= 0 ? "text-[#45fa9c]" : "text-[#ff716a]"}`}>
+                  <span className="material-symbols-outlined text-sm mr-1">{totalPnl >= 0 ? "trending_up" : "trending_down"}</span>
+                  {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)} P&L
+                </span>
+              )}
             </div>
-            <div className="mt-6 h-12 flex items-end gap-1">
-              {[20, 40, 30, 60, 80, 70, 95].map((h, i) => (
-                <div key={i} className={`flex-1 rounded-sm ${i >= 4 ? `bg-[#ba9eff]/${i === 4 ? "40" : i === 5 ? "60" : "80"}` : "bg-zinc-800/40"}`} style={{ height: `${h}%` }} />
-              ))}
+            <div className="mt-4 flex gap-6">
+              <div>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase">Open</p>
+                <p className="text-lg font-mono text-[#f9f5f8]">{openPositions.length}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase">Closed</p>
+                <p className="text-lg font-mono text-zinc-400">{closedPositions.length}</p>
+              </div>
+              {openPositions.length === 0 && (
+                <p className="text-xs font-mono text-zinc-600 self-end pb-0.5">No open positions yet</p>
+              )}
             </div>
           </div>
 
           <div className="bg-[#19191c] p-6 rounded-xl border border-transparent hover:border-zinc-800 transition-colors">
-            <label className="text-[10px] font-manrope font-semibold text-zinc-500 uppercase tracking-widest">P&L Performance</label>
+            <label className="text-[10px] font-manrope font-semibold text-zinc-500 uppercase tracking-widest">P&L</label>
             <div className="mt-4 space-y-4">
-              <div><p className="text-[10px] text-zinc-500 font-mono">TODAY</p><p className="text-xl font-mono text-[#45fa9c]">+4.2%</p></div>
-              <div><p className="text-[10px] text-zinc-500 font-mono">ALL TIME</p><p className="text-xl font-mono text-[#45fa9c]">+28.4%</p></div>
+              <div>
+                <p className="text-[10px] text-zinc-500 font-mono">UNREALISED</p>
+                <p className={`text-xl font-mono ${totalPnl >= 0 ? "text-[#45fa9c]" : "text-[#ff716a]"}`}>
+                  {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-zinc-500 font-mono">POSITIONS</p>
+                <p className="text-xl font-mono text-zinc-300">{allPositions.length}</p>
+              </div>
             </div>
           </div>
 
@@ -86,19 +116,22 @@ export default function DashboardPage() {
             <div>
               <div className="flex justify-between items-start">
                 <label className="text-[10px] font-manrope font-semibold text-zinc-500 uppercase tracking-widest">Win Rate</label>
-                <span className="text-xs font-mono text-zinc-400">72%</span>
+                <span className="text-xs font-mono text-zinc-400">{winRate != null ? `${winRate}%` : "—"}</span>
               </div>
               <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div className="bg-[#ba9eff] h-full w-[72%] shadow-[0_0_8px_rgba(186,158,255,0.4)]" />
+                <div className="bg-[#ba9eff] h-full shadow-[0_0_8px_rgba(186,158,255,0.4)] transition-all"
+                  style={{ width: `${winRate ?? 0}%` }} />
               </div>
-              <p className="text-[10px] font-mono text-zinc-500 mt-2 uppercase">Resolved: 142 positions</p>
+              <p className="text-[10px] font-mono text-zinc-500 mt-2 uppercase">
+                {closedPositions.length > 0 ? `${closedPositions.length} resolved` : "No resolved positions yet"}
+              </p>
             </div>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800/50">
               <span className="text-xs font-manrope font-bold text-[#ba9eff] tracking-tight">AUTOPILOT</span>
-              <div className="relative inline-flex items-center cursor-pointer">
-                <div className="w-10 h-5 bg-[#ba9eff]/20 rounded-full border border-[#ba9eff]/30" />
-                <div className="absolute left-6 top-1 w-3 h-3 bg-[#ba9eff] rounded-full shadow-[0_0_12px_#ba9eff]" />
-              </div>
+              <Link href="/settings" className="relative inline-flex items-center cursor-pointer">
+                <div className="w-10 h-5 bg-zinc-800 rounded-full border border-zinc-700" />
+                <div className="absolute left-1 top-1 w-3 h-3 bg-zinc-500 rounded-full" />
+              </Link>
             </div>
           </div>
         </section>

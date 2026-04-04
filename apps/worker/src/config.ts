@@ -2,10 +2,16 @@
  * App config and constants.
  */
 
+export const MARKET_SCOPE = {
+  MIN_TRACKED: 20,
+  MAX_TRACKED: 50,
+  DEFAULT_TRACKED: 30,
+} as const;
+
 export const POLYMARKET = {
   GAMMA_API_BASE: "https://gamma-api.polymarket.com",
   MARKETS_PATH: "/markets",
-  DEFAULT_MARKET_LIMIT: 20,
+  DEFAULT_MARKET_LIMIT: MARKET_SCOPE.DEFAULT_TRACKED,
 } as const;
 
 export const DOME = {

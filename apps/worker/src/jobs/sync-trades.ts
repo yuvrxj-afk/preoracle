@@ -15,10 +15,10 @@ export async function syncTrades(
 ): Promise<void> {
   let conditionIds = options.conditionIds ?? [];
 
-  // If no explicit list, pull active condition_ids from dome_markets.
+  // If no explicit list, pull from tracked_markets.
   if (conditionIds.length === 0) {
     const res = await pool.query<{ condition_id: string }>(
-      `SELECT condition_id FROM dome_markets WHERE status = 'open' OR status IS NULL ORDER BY fetched_at DESC LIMIT 50`
+      `SELECT condition_id FROM tracked_markets ORDER BY added_at DESC LIMIT 50`
     );
     conditionIds = res.rows.map((r) => r.condition_id);
   }
